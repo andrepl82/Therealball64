@@ -1,0 +1,154 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jumping Ball Game</title>
+    <style>
+        body {
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            background-color: #f5f5f5;
+            display: block;
+            margin: 0 auto;
+            border: 1px solid #000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Jumping Ball Game</h1>
+    <p>Press SPACE to jump over obstacles!</p>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const BALL_RADIUS = 20;
+        const GRAVITY = 0.6;
+        const JUMP_STRENGTH = -12;
+        const OBSTACLE_WIDTH = 50;
+        const MIN_OBSTACLE_HEIGHT = 20;  // Minimum height for obstacles
+        const MAX_OBSTACLE_HEIGHT = 80;  // Maximum height for obstacles
+        const OBSTACLE_SPEED = 5;
+        const MIN_OBSTACLE_GAP = 300; // Minimum gap between obstacles
+        const OBSTACLE_INTERVAL = 100; // How often obstacles are created (frames)
+
+        let ball = {
+            x: 100,
+            y: canvas.height - BALL_RADIUS - MIN_OBSTACLE_HEIGHT,
+            yVelocity: 0,
+            isJumping: false
+        };
+
+        let obstacles = [];
+        let score = 0;
+        let framesSinceLastObstacle = 0; // Counter to track time since last obstacle
+
+        // Function to create obstacles with varying heights and enforce a minimum gap between them
+        function createObstacle() {
+            const obstacleHeight = Math.floor(Math.random() * (MAX_OBSTACLE_HEIGHT - MIN_OBSTACLE_HEIGHT + 1)) + MIN_OBSTACLE_HEIGHT;
+            const obstacle = {
+                x: canvas.width,
+                y: canvas.height - obstacleHeight,
+                width: OBSTACLE_WIDTH,
+                height: obstacleHeight
+            };
+            obstacles.push(obstacle);
+            framesSinceLastObstacle = 0; // Reset counter after creating an obstacle
+        }
+
+        function jump() {
+            if (!ball.isJumping) {
+                ball.yVelocity = JUMP_STRENGTH;
+                ball.isJumping = true;
+            }
+        }
+
+        function updateBall() {
+            ball.yVelocity += GRAVITY;
+            ball.y += ball.yVelocity;
+
+            // Prevent the ball from falling through the ground
+            if (ball.y > canvas.height - BALL_RADIUS - MIN_OBSTACLE_HEIGHT) {
+                ball.y = canvas.height - BALL_RADIUS - MIN_OBSTACLE_HEIGHT;
+                ball.yVelocity = 0;
+                ball.isJumping = false;
+            }
+        }
+
+        function updateObstacles() {
+            for (let i = 0; i < obstacles.length; i++) {
+                const obstacle = obstacles[i];
+                obstacle.x -= OBSTACLE_SPEED;
+
+                // Remove obstacles that move off-screen
+                if (obstacle.x + OBSTACLE_WIDTH < 0) {
+                    obstacles.splice(i, 1);
+                    i--;
+                    score++;
+                }
+
+                // Check for collision
+                if (ball.x + BALL_RADIUS > obstacle.x && ball.x - BALL_RADIUS < obstacle.x + OBSTACLE_WIDTH) {
+                    if (ball.y + BALL_RADIUS > obstacle.y) {
+                        alert('Game Over! Your score: ' + score);
+                        document.location.reload();
+                    }
+                }
+            }
+        }
+
+        function drawBall() {
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, BALL_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff0000';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawObstacles() {
+            for (const obstacle of obstacles) {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            }
+        }
+
+        function drawScore() {
+            ctx.font = '20px Arial';
+            ctx.fillStyle = '#000';
+            ctx.fillText('Score: ' + score, 10, 30);
+        }
+
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            updateBall();
+            updateObstacles();
+
+            drawBall();
+            drawObstacles();
+            drawScore();
+
+            // Increment the counter and create obstacles at regular intervals
+            framesSinceLastObstacle++;
+            if (framesSinceLastObstacle >= OBSTACLE_INTERVAL) {
+                createObstacle();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.code === 'Space') {
+                jump();
+            }
+        });
+
+        // Start the game loop
+        gameLoop();
+    </script>
+</body>
+</html>
